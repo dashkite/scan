@@ -113,7 +113,7 @@ run = ( input, state ) ->
   else
     throw new Error "parser in an unknown state: #{ mode }"
 
-make = ( rules, start ) ->
+make = ( start, rules ) ->
   memoize ( text ) ->
     state =
       mode: [ start ]
