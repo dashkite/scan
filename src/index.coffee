@@ -73,10 +73,6 @@ append = ( c, state ) ->
 
 export { append }
 
-# appendText = ( text ) ->
-
-# export { appendText }
-
 prefix = ( text, f ) ->
   ( c, state ) -> f "#{text}#{c}", state
 
