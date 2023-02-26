@@ -47,10 +47,18 @@ trim = ( state ) ->
 
 export { trim }
 
+tag = ( name ) ->
+  ( state ) ->
+    state.current = [ name ]: state.current
+    state
+
+export { tag }
+
 save = ( name ) ->
-  (state ) ->
+  ( state ) ->
     ( state.data[ name ] ?= [] ).push state.current
     state
+
 export { save }
 
 clear = ( state ) ->
