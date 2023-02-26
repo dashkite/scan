@@ -60,17 +60,22 @@ clear = ( state ) ->
 export { clear }
 
 append = ( c, state ) ->
-  state.current += c
-  state
+  # faux currying so we don't need to define
+  # a second function for the case where we 
+  # fix the text being appended
+  if state?
+    state.current += c
+    state
+  else
+    ( state ) ->
+      state.current += text
+      state
 
 export { append }
 
-appendText = ( text ) ->
-  ( state ) ->
-    state.current += text
-    state
+# appendText = ( text ) ->
 
-export { appendText }
+# export { appendText }
 
 prefix = ( text, f ) ->
   ( c, state ) -> f "#{text}#{c}", state
