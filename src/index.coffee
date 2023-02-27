@@ -47,6 +47,12 @@ trim = ( state ) ->
 
 export { trim }
 
+lower = ( state ) ->
+  state.current = state.current.toLowerCase()
+  state
+
+export { lower }
+
 tag = ( name ) ->
   ( state ) ->
     state.current = [ name ]: state.current
@@ -76,7 +82,7 @@ append = ( c, state ) ->
     state
   else
     ( state ) ->
-      state.current += text
+      state.current += c
       state
 
 export { append }
@@ -85,6 +91,35 @@ prefix = ( text, f ) ->
   ( c, state ) -> f "#{text}#{c}", state
 
 export { prefix  }
+
+buffer = ( c, state ) ->
+  state.buffer = c
+  state
+
+unbuffer = ( f ) ->
+  ( state ) ->
+    c = state.buffer
+    state.buffer = undefined
+    f c, state
+
+export { buffer, unbuffer }
+
+match = ( re ) ->
+  ( state ) ->
+    if re.test state.current
+      state
+    else
+      throw new Error "match failed"
+
+export { match }
+
+log = ( label ) ->
+  ( c, state ) ->
+    state = if state? then state else c
+    console.log state
+    state
+
+export { log }
 
 getContext = ( state ) ->
   i = state.index
@@ -97,8 +132,8 @@ getExpected = ( state ) ->
   mode = getMode state
   ( Object.keys state.rules[ mode ] ).join ", "
 
-isFinished = ( start, state ) ->
-  state.mode.length == 1 && state.mode[0] == start  
+isFinished = ( state ) ->
+  state.mode.length == 0
 
 run = ( input, state ) ->
   mode = getMode state
@@ -125,14 +160,16 @@ make = ( start, rules ) ->
       for c, i in text
         state.index = i
         run c, state
-      if isFinished start, state
-        run "end", state
+      result = run "end", state
+      if isFinished state
+        result
       else
         mode = getMode state
         throw new Error "unexpected end of input while parsing [ #{ mode } ]"
     catch error
       context = getContext state
-      console.error "unexpected parse error at '#{ context }' on: [ #{ input } ]."
+      character = state.text[ state.index ]
+      console.error "unexpected parse error at '#{ character }' (near '#{ context }') on: [ #{ mode } ]."
       throw error
 
 export { make }
