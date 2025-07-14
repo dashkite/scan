@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@dashkite/lru-cache':
-        specifier: link:../lru-cache
-        version: link:../lru-cache
+        specifier: 0.1.0
+        version: 0.1.0
     devDependencies:
       '@dashkite/amen':
         specifier: ^0.2.0
@@ -611,6 +611,9 @@ packages:
 
   '@dashkite/kaiko@0.3.3':
     resolution: {integrity: sha512-XnAvVr9y2MsDqMLr4A24vkLF7Iuq3E8RjHEEpqhe29P5NevVX9jXKcXUStNMp9MSJbjHd2pqUNiM5Vvdja9ggg==}
+
+  '@dashkite/lru-cache@0.1.0':
+    resolution: {integrity: sha512-bAN6/NxYrorgiKMdh0/f6U6AMdLoBFn9sJUZDD+Od/Fw6O1istAMF2hQugdO3SOeBOUi9dQN+rXMP60dJ/2zOw==}
 
   '@dashkite/masonry-coffee@0.2.0':
     resolution: {integrity: sha512-xJO48SIRpsYbJF32CwpA6yeEJhNh+DtxCucyt4MNJqO0yru9X7hoxZsHneRoUE+kISD0KTO8DLQiHv21nU/V2A==}
@@ -2136,6 +2139,8 @@ snapshots:
   '@dashkite/joy@0.3.16': {}
 
   '@dashkite/kaiko@0.3.3': {}
+
+  '@dashkite/lru-cache@0.1.0': {}
 
   '@dashkite/masonry-coffee@0.2.0':
     dependencies:

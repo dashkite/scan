@@ -42,6 +42,6 @@
     "@dashkite/genie-release": "^0.2.8"
   },
   "dependencies": {
-    "@dashkite/lru-cache": "link:../lru-cache"
+    "@dashkite/lru-cache": "0.1.0"
   }
 }
