@@ -1,6 +1,6 @@
 {
   "name": "@dashkite/scan",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "description": "State-machine scanner library for JavaScript",
   "keywords": [
     "scanner",
