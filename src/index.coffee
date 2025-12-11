@@ -1,24 +1,11 @@
+import { isKind } from "@dashkite/joy/type"
 import { memoize } from "@dashkite/lru-cache"
 
-pipe = ( fx ) ->
-  switch fx.length
-    when 1 then -> fx[0].apply null, arguments
-    when 2 then -> fx[1] fx[0].apply null, arguments
-    when 3 then -> fx[2] fx[1] fx[0].apply null, arguments
-    when 4 then -> fx[3] fx[2] fx[1] fx[0].apply null, arguments
-    when 5 then -> fx[4] fx[3] fx[2] fx[1] fx[0].apply null, arguments
-    when 6 then -> fx[5] fx[4] fx[3] fx[2] fx[1] fx[0].apply null, arguments
-    when 7 then -> fx[6] fx[5] fx[4] fx[3] fx[2] fx[1] fx[0].apply null, arguments
-    else ( args... ) ->
-      for f in fx
-        args = [ f.apply null, args ]       
-      args[0]
+advance = ( state ) -> 
+  state.remains = state.remains[ state.buffer.length.. ]
+  state
 
-export { pipe }
-
-skip = ( input, state ) -> state
-
-export { skip }
+export { advance }
 
 push = ( mode ) ->
   ( state ) ->
@@ -67,42 +54,47 @@ save = ( name ) ->
 
 export { save }
 
+map = ( transform ) ->
+  ( state ) ->
+    state.current = transform state.current
+    state
+
+export { map }
+
 clear = ( state ) ->
   state.current = ""
   state
 
 export { clear }
 
-append = ( c, state ) ->
-  # faux currying so we don't need to define
-  # a second function for the case where we 
-  # fix the text being appended
-  if state?
-    state.current += c
-    state
-  else
-    ( state ) ->
-      state.current += c
-      state
+append = ( state ) ->
+  state.current += state.buffer
+  delete state.buffer
+  state
 
 export { append }
 
-prefix = ( text, f ) ->
-  ( c, state ) -> f "#{text}#{c}", state
+prefix = ( text ) ->
+  ( state ) -> 
+    state.buffer = "#{ text }#{ state.buffer }"
+
+suffix = ( text ) ->
+  ( state ) -> 
+    state.buffer += text
 
 export { prefix  }
 
-buffer = ( c, state ) ->
-  state.buffer = c
-  state
-
-unbuffer = ( f ) ->
+copy = ( name ) ->
   ( state ) ->
-    c = state.buffer
-    state.buffer = undefined
-    f c, state
+    state.buffers[ name ] = state.buffer
+    state
 
-export { buffer, unbuffer }
+paste = ( name ) ->
+  ( state ) ->
+    state.buffer = state.buffers[ name ]
+    state
+
+export { copy, paste }
 
 match = ( re ) ->
   ( state ) ->
@@ -114,37 +106,46 @@ match = ( re ) ->
 export { match }
 
 log = ( label ) ->
-  ( c, state ) ->
-    state = if state? then state else c
-    console.log state
+  ( state ) ->
+    console.log [ label ]: state
     state
 
 export { log }
 
 getContext = ( state ) ->
-  i = state.index
-  state.text[( i - 5)..( i + 5 )]
+  state.remains[..5]
 
 getMode = ( state ) ->
   state.mode[ state.mode.length - 1 ]
 
 getExpected = ( state ) ->
-  mode = getMode state
-  ( Object.keys state.rules[ mode ] ).join ", "
+  state
+    .rules[( getMode state )]
+    .map ([ pattern ]) -> pattern
+    .join ", "
 
 isFinished = ( state ) ->
   state.mode.length == 0
 
-run = ( input, state ) ->
+match = ( pattern, text ) ->
+  if isKind String, pattern
+    pattern if text.startsWith pattern
+  else if isKind RegExp, pattern
+    m[ 0 ] if ( m = text.match pattern )?
+    
+run = ( state ) ->
   mode = getMode state
   if ( group = state.rules[ mode ] )?
-    if ( rule = ( group[ input ] ? group.default ) )?
-      rule input, state
-    else
+    for [ pattern, rule ] in group
+      if ( buffer = match pattern, state.remains )?
+        state = rule { state..., buffer }
+        break
+    if !buffer?
       expected = getExpected state
       context = getContext state
-      throw new Error "parse error at '#{ context }'.
-        Expected one of: [ #{ expected } ], got: '#{ input }'"
+      throw new Error "parse error at '#{ context }...'.
+        Expected one of: [ #{ expected } ]"
+    state
   else
     throw new Error "parser in an unknown state: #{ mode }"
 
@@ -152,24 +153,27 @@ make = ( start, rules ) ->
   memoize ( text ) ->
     state =
       mode: [ start ]
-      data: {}
-      current: ""
       text: text
+      remains: text
+      current: ""
+      buffers: {}
+      data: {}
       rules: rules
+    done = ->
+      ( state.remains.length == 0 ) &&
+        ( state.mode.length == 0 )
     try
-      for c, i in text
-        state.index = i
-        run c, state
-      result = run "end", state
+      ( state = run state ) until done()
       if isFinished state
-        result
+        state.data
       else
-        mode = getMode state
-        throw new Error "unexpected end of input while parsing [ #{ mode } ]"
+        throw new Error "unexpected end of input
+          while parsing [ #{ getMode state } ]"
     catch error
+      # TODO add line no and char
       context = getContext state
-      character = state.text[ state.index ]
-      console.error "unexpected parse error at '#{ character }' (near '#{ context }') on: [ #{ mode } ]."
+      console.error "unexpected parse error at
+        '#{ context }...' in: [ #{ getMode state } ]."
       throw error
 
 export { make }
